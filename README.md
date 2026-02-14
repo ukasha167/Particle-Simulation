@@ -1,54 +1,79 @@
-# Particle Simulation Engine (C++)
+#  CPU Particle Simulation (Optimized)
 
-A deterministic, CPU-bound particle simulation written in modern C++, built from first principles with **zero external dependencies**, designed to prioritize **memory locality, predictability, and architectural clarity** over convenience abstractions.
-
-This project is not a demo.
-It is an exploration of *how simulations should be built when you actually care about what the machine is doing*.
+A high-performance, deterministic physics engine written in C++.
+This project is a case study in **Data-Oriented Design**. By restructuring memory access and algorithmic complexity, I achieved a **24x performance increase** over the initial implementation.
 
 ---
 
+##  The Numbers
 
-## Project Structure
+I rewrote my simulation engine from scratch. Same machine. Same target FPS. Drastically different results.
+
+| Metric | Old Version | **New Version** |
+| --- | --- | --- |
+| **Particle Count** | ~700 | **17,000+** |
+| **FPS** | 60 | **60** |
+| **Speedup** | 1x | **24x** |
+
+### The "Hard Mode" Constraints
+
+To ensure this was a test of raw engineering efficiency, I imposed strict rules:
+
+* ❌ **No Multithreading:** Everything runs on a single CPU core.
+* ❌ **No GPU Compute:** No Compute Shaders or CUDA. Pure CPU physics.
+* ❌ **No Cheats:** Every particle checks for collisions with relevant neighbors. 8 sub-steps per frame.
+
+---
+
+##  The Optimization Strategy
+
+This isn't just "faster code." It is a fundamental shift in architecture.
+
+### 1. Data-Oriented Design (SoA)
+
+Instead of an `Array of Structures` (AoS) where a `Particle` object holds its own position, velocity, and color, I utilize a `Structure of Arrays` (SoA).
+
+* **Result:** Positions, velocities, and accelerations are split into contiguous arrays.
+* **Benefit:** Predictable memory access patterns that maximize cache-line utilization and allow for compiler auto-vectorization.
+
+### 2. The "No Heap" Manifesto
+
+`new` and `malloc` are banned in the hot loop.
+
+* All data lives in **static, fixed-size arrays**.
+* **Zero allocator overhead.**
+* **Zero pointer chasing.**
+* **Zero heap fragmentation.**
+* Far better cache behavior than scattered heap objects.
+
+### 3. Spatial Hashing & Counting Sort
+
+The naive approach checks every particle against every other particle ().
+
+* **Solution:** A Uniform Grid partitions the world.
+* **The Trick:** I use **Counting Sort ()** to sort particles by their cell index every frame.
+* **Benefit:** Collision checks only "walk" linear memory to find neighbors. We stop thrashing the cache and start streaming it.
+
+### 4. Verlet Integration
+
+Replaced Euler integration with Verlet.
+
+* **Benefit:** Extremely stable at high forces and larger timesteps, reducing the need for expensive corrective passes.
+
+---
+
+##  Project Structure
+
+The codebase is kept intentionally flat to avoid "header spaghetti."
 
 ```text
-.
-├── CMakeLists.txt
 ├── src/
-│   ├── main.cpp        # Entry point
-│   ├── solver.cpp      # Physics / simulation step
-│   ├── solver.h
-│   ├── renderer.cpp    # Visualization layer
-│   ├── renderer.h
-│   ├── particle.cpp    # Particle state & behavior
-│   ├── particle.h
-│   └── defines.h       # Compile-time configuration & constants
+│   ├── main.cpp         # Entry point & Loop
+│   ├── solver.cpp       # The Physics Engine (Verlet + Grid)
+│   ├── renderer.cpp     # Visualization (SFML/Raylib)
+│   └── particle_data.h  # SoA Data Structures
+
 ```
-
-### Why this structure matters
-
-* **Clear ownership of responsibilities**
-* **No god files**
-* **Scales cleanly as features grow**
-* **Mirrors real-world engine layouts**
-
-This is a small codebase wearing a large-codebase skeleton — intentionally.
-
----
-
-## Build System: CMake
-
-This project uses **CMake** as a meta-build system.
-
-### Why CMake?
-
-* Cross-platform by design
-* Decouples build logic from compiler specifics
-* Scales from tiny projects to massive codebases
-* Industry standard for C++ tooling
-
-The goal is simple:
-
-> Anyone, on any OS, with a compiler, should be able to build this.
 
 ---
 
@@ -56,8 +81,8 @@ The goal is simple:
 
 ### All Platforms
 
-* **C++17 compatible compiler**
-* **CMake ≥ 3.15**
+* **C++11 compatible compiler**
+* **CMake ≥ 3.11**
 
 ### Linux
 
@@ -129,126 +154,17 @@ From the `build` directory:
 main.exe
 ```
 
-No runtime arguments are required by default.
-Simulation parameters are intentionally controlled at **compile time** via `defines.h`.
+---
+
+##  Future Roadmap
+
+While the current version hits 17k on a single thread, the architecture is ready for the next level:
+
+* **Multithreading:** The grid-based collision system is naturally parallelizable. 
+* **Compute Shaders:** Moving the Verlet integration to the GPU for 1M+ particles.
 
 ---
 
-## Core Design Principles
+##  License
 
-### 1. No External Libraries (On Purpose)
-
-No physics engines.
-No math libraries.
-No utility headers.
-
-**Why?**
-
-External libraries:
-
-* Obscure memory layout
-* Introduce hidden allocations
-* Add abstraction penalties
-* Make performance characteristics harder to reason about
-
-This project chooses **clarity over convenience**.
-
-Everything that happens here is visible, debuggable, and under direct control.
-
----
-
-### 2. Static & Stack-Based Allocation Over Heap Allocation
-
-You will notice a **deliberate avoidance of dynamic heap allocation** in hot paths.
-
-**Why the heap was avoided:**
-
-* Heap allocation involves:
-
-  * System calls or allocator locks
-  * Fragmentation risks
-  * Pointer chasing
-* Heap memory destroys cache locality
-* Allocation patterns become non-deterministic under pressure
-
-**What was chosen instead:**
-
-* Stack allocation where lifetimes are obvious
-* Fixed-size containers where bounds are known
-* Contiguous memory layouts for particles
-
-This results in:
-
-* Fewer cache misses
-* Predictable memory access patterns
-* Easier reasoning about performance
-
----
-
-### 3. Separation of Simulation and Rendering
-
-The simulation **does not depend on rendering**.
-
-The renderer:
-
-* Reads simulation state
-* Displays it
-* Has zero authority over physics
-
-The solver:
-
-* Advances time
-* Updates particle state
-* Knows nothing about visuals
-
-This separation allows:
-
-* Headless simulation
-* Deterministic testing
-* Renderer replacement without touching physics
-* Future parallelization
-
----
-
-### 4. Data-Oriented Thinking
-
-Particles are stored contiguously.
-State updates are linear.
-Memory access is predictable.
-
-The design leans toward:
-
-* Cache-friendly traversal
-* Minimal branching
-* Tight loops
-* Explicit control flow
-
-No virtual dispatch.
-No polymorphic hierarchies.
-No hidden indirection.
-
----
-
-## Intended Extensions
-
-This architecture cleanly supports:
-
-* Multi-threaded solvers
-* SIMD optimization
-* Alternative renderers
-* Headless batch simulation
-* Data export for analysis
-
-None of these require rewriting the core.
-
----
-
-## Final Note
-
-This repository reflects a specific philosophy:
-
-> **Understanding beats convenience.
-> Control beats abstraction.
-> Structure beats shortcuts.**
-
-If you are looking for a simulation you can *reason about down to the cache line* — welcome.
+MIT License. Feel free to fork, learn, and optimize.
