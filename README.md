@@ -20,8 +20,8 @@ I rewrote my simulation engine from scratch. Same machine. Same target FPS. Dras
 To ensure this was a test of raw engineering efficiency, I imposed strict rules:
 
 *  **No Multithreading:** Everything runs on a single CPU core.
-* ❌ **No GPU Compute:** No Compute Shaders or CUDA. Pure CPU physics.
-* ❌ **No Cheats:** Every particle checks for collisions with relevant neighbors. 8 sub-steps per frame.
+*  **No GPU Compute:** No Compute Shaders or CUDA. Pure CPU physics.
+*  **No Cheats:** Every particle checks for collisions with relevant neighbors. 8 sub-steps per frame.
 
 ---
 
