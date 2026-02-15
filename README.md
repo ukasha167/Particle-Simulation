@@ -126,6 +126,7 @@ cd build
 ```bash
 cmake ..
 ```
+This will download the raylib. It might look stuck for sometime if you have slow internet, but wait for a while it will eventually download. The actual size is ~100MB
 
 ### 4. Compile
 
