@@ -111,7 +111,7 @@ brew install cmake
 ### 1. Clone the Repository
 
 ```bash
-git clone ukasha167/Particle-Simulation
+git clone https://github.com/ukasha167/Particle-Simulation.git
 cd Particle-Simulation
 ```
 
