@@ -76,8 +76,14 @@ Replaced Euler integration with Verlet.
 │   └── defines.h          # Compile time parameters
 ├── CMakeList.txt          # Build File
 ```
-
 ---
+
+There are multiple versions of the project (V1-V7), The CMake will only compile the code inside the src folder.
+Currently the src folder contains the same code as V7. If you wish to run any older version, you can do that by:
+
+Manually setting up the CMake
+Or
+Copy/Over wite all of the files into the src folder
 
 ## Prerequisites
 
