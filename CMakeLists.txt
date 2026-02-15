@@ -7,16 +7,33 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # APPLY SYSTEM SPECIFIC FLAGS
-if(MSVC) # Visual Studio
-    add_compile_options(/O2 /Ot /fp:fast /GL)
-    add_link_options(/LTCG)
-else() # LINUX / MACOS / MINGW
-    add_compile_options(-O3 -ffast-math)
+if(MSVC)
+    # WINDOWS (Visual Studio)
+    # ---------------------------------------------------------
+    # /O2   = Maximize Speed (Equivalent to -O3)
+    # /Oi   = Enable Intrinsic Functions (Use CPU instructions directly for math like sqrt, sin, cos)
+    # /Ot   = Favor Fast Code (Prioritize speed over size)
+    # /GL   = Whole Program Optimization (Allows inlining across different files)
+    
+    add_compile_options(/O2 /Oi /Ot /GL)
+    add_link_options(/LTCG) # Linker option required when using /GL
 
+else()
+    # LINUX / MACOS / MINGW (GCC or Clang)
+    # ---------------------------------------------------------
+    # -O3 = Aggressive optimization
+    # -fno-math-errno = Don't set the global 'errno' variable for math (huge speedup for sqrt/pow, 100% safe)
+    # -fno-trapping-math = Assume math instructions won't crash the program (safe for games)
+    
+    add_compile_options(-O3 -fno-math-errno -fno-trapping-math)
+
+    # Architecture specific optimizations
     if(APPLE)
-        add_compile_options(-march=native) 
+        # Apple Silicon (M-Series)
+        add_compile_options(-mcpu=apple-m1)
     else()
-        # Note: Remove -march=native if you are getting any error
+        # Linux / Windows (Intel/AMD)
+        # -march=native = Use AVX2/AVX512 instructions available on YOUR cpu
         add_compile_options(-march=native)
     endif()
 endif()
