@@ -13,7 +13,7 @@ if(MSVC)
     # /Ot   = Favor fast code
     # /fp:fast = Faster floating point math (crucial for physics games)
     # add_compile_options(/O2 /Ot /fp:fast)
-    add_compile_options(-O2 -ffast-math -fno-math-errno)
+    add_compile_options(/O2 -ffast-math -fno-math-errno)
 else()
     # LINUX / MACOS / MINGW (GCC or Clang)
     # -O3 = Aggressive optimization
