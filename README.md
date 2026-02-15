@@ -48,11 +48,13 @@ Instead of an `Array of Structures` (AoS) where a `Particle` object holds its ow
 
 ### 3. Spatial Hashing & Counting Sort
 
-The naive approach checks every particle against every other particle ().
+The naive approach checks every particle against every other particle **O(N^2)**.
 
-* **Solution:** A Uniform Grid partitions the world.
-* **The Trick:** I use **Counting Sort ()** to sort particles by their cell index every frame.
-* **Benefit:** Collision checks only "walk" linear memory to find neighbors. We stop thrashing the cache and start streaming it.
+* **Solution:** A Uniform Grid partitions the world into a discrete coordinate system.
+* **The Trick:** I use **Counting Sort O(Number of elements + Grid cells)** to sort particles by their cell index every frame, This reorganizes the particle indices into contiguous memory blocks corresponding to their grid location.
+* **Benefit:** Instead of jumping randomly through memory to check distant neighbors, the collision solver walks through linear blocks of data **O(N)**. This eliminates CPU cache thrashing and allows the processor to stream neighbor data at maximum bandwidth. 
+
+**In short:** The collision algorithm that i'm using, behaves like a LinkedList of particles. And the **Counting Sort** is just making sure that the related particles' indices are contiguous like Array.
 
 ### 4. Verlet Integration
 
@@ -72,14 +74,12 @@ Replaced Euler integration with Verlet.
 │   ├── renderer.h/cpp     # Visualization (Raylib)
 │   |── particle.cpp       # SoA Data Structures
 │   └── defines.h          # Compile time parameters
-
+├── CMakeList.txt          # Build File
 ```
 
 ---
 
 ## Prerequisites
-
-### All Platforms
 
 * **C++11 compatible compiler**
 * **CMake ≥ 3.11**
@@ -95,7 +95,6 @@ sudo apt install build-essential cmake
 ```bash
 brew install cmake
 ```
-
 (Xcode Command Line Tools required)
 
 ### Windows
