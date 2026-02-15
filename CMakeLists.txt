@@ -7,26 +7,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # APPLY SYSTEM SPECIFIC FLAGS
-if(MSVC)
-    # WINDOWS (Visual Studio)
-    # /O2   = Maximize speed
-    # /Ot   = Favor fast code
-    # /fp:fast = Faster floating point math (crucial for physics games)
-    # add_compile_options(/O2 /Ot /fp:fast)
-    add_compile_options(/O2 -ffast-math -fno-math-errno)
-else()
-    # LINUX / MACOS / MINGW (GCC or Clang)
-    # -O3 = Aggressive optimization
-    # -ffast-math = Faster float math (ignores strict IEEE rules for speed)
+if(MSVC) # Visual Studio
+    add_compile_options(/O2 /Ot /fp:fast /GL)
+    add_link_options(/LTCG)
+else() # LINUX / MACOS / MINGW
     add_compile_options(-O3 -ffast-math)
 
-    # Architecture specific optimizations
     if(APPLE)
-        # Apple Silicon (M1/M2/M3)
-        add_compile_options(-mcpu=apple-m1)
+        add_compile_options(-march=native) 
     else()
-        # Linux / Windows (Intel/AMD)
-        # -march=native = Use all instructions available on THIS machine (AVX2, etc)
+        # Note: Remove -march=native if you are getting any error
         add_compile_options(-march=native)
     endif()
 endif()
@@ -37,19 +27,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ADDING RAYLIB
 include(FetchContent)
-set(FETCHCONTENT_QUIET FALSE)
 
-# RAYLIB COMES WITH SOME EXAMPLES AND GAMES
-# WE DON"T WANT TO BUILD THEM. SO WE TURN THEM OFF
+set(RAYLIB_VERSION "5.0")
+set(RAYLIB_URL "https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz")
+
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) 
 set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) 
+set(FETCHCONTENT_QUIET FALSE)
 
-# GET RAYLIB
 FetchContent_Declare(
     raylib
-    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
-    GIT_TAG "master"
-    GIT_PROGRESS TRUE
+    URL ${RAYLIB_URL}
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 FetchContent_MakeAvailable(raylib)
