@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.14)
 project(main CXX)
 
 # FORCE RELEASE MODE
@@ -38,14 +38,13 @@ else()
     endif()
 endif()
 
-
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ADDING RAYLIB
 include(FetchContent)
 
-set(RAYLIB_VERSION "5.0")
+set(RAYLIB_VERSION "5.5")
 set(RAYLIB_URL "https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz")
 
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) 

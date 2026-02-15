@@ -3,8 +3,6 @@
 
 #include <cstdint>
 
-#include "raylib.h"
-
 // LIMIT OF 1 BYTE:  uint8_t  = 0 - 255 (INCLUSIVE)
 // LIMIT OF 2 BYTES: uint16_t = 0 - 65,535 (INCLUSIVE)
 // LIMIT OF 4 BYTES: uint32_t = 0 - 4,294,967,295 (INCLUSIVE)
