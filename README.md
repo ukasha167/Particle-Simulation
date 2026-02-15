@@ -64,14 +64,14 @@ Replaced Euler integration with Verlet.
 
 ##  Project Structure
 
-The codebase is kept intentionally flat to avoid "header spaghetti."
 
 ```text
 ├── src/
-│   ├── main.cpp         # Entry point & Loop
-│   ├── solver.cpp       # The Physics Engine (Verlet + Grid)
-│   ├── renderer.cpp     # Visualization (SFML/Raylib)
-│   └── particle_data.h  # SoA Data Structures
+│   ├── main.cpp           # Entry point & Loop
+│   ├── solver.h/cpp       # The Physics Engine (Verlet + Grid)
+│   ├── renderer.h/cpp     # Visualization (Raylib)
+│   |── particle.cpp       # SoA Data Structures
+│   └── defines.h          # Compile time parameters
 
 ```
 
