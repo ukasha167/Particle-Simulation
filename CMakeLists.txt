@@ -44,17 +44,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ADDING RAYLIB
 include(FetchContent)
 
-set(RAYLIB_VERSION "5.5")
-set(RAYLIB_URL "https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz")
-
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) 
 set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) 
 set(FETCHCONTENT_QUIET FALSE)
 
 FetchContent_Declare(
     raylib
-    URL ${RAYLIB_URL}
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/raysan5/raylib.git
+    GIT_TAG        5.0
 )
 
 FetchContent_MakeAvailable(raylib)
