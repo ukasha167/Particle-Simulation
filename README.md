@@ -87,8 +87,8 @@ Copy/Over wite all of the files into the src folder
 
 ## Prerequisites
 
-* **C++11 compatible compiler**
-* **CMake ≥ 3.11**
+* **C++17 compatible compiler**
+* **CMake ≥ 3.24**
 
 ### Linux
 
