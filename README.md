@@ -1,11 +1,9 @@
 #  CPU Particle Simulation (Optimized)
 
-A high-performance, deterministic physics engine written in C++.
+A high-performance physics engine written in C++.
 This project is a case study in **Data-Oriented Design**. By restructuring memory access and algorithmic complexity, I achieved a **24x performance increase** over the initial implementation.
 
----
-
-##  The Numbers
+### The Numbers
 
 I rewrote my simulation engine from scratch. Same machine. Same target FPS. Drastically different results.
 
@@ -15,6 +13,13 @@ I rewrote my simulation engine from scratch. Same machine. Same target FPS. Dras
 | **FPS** | 60 | **60** |
 | **Speedup** | 1x | **24x** |
 
+**Note:** The old version which I compared to, is not included in this repository. However I can explain why that was so slow:
+
+*  It was rendered in SFML with no VertexBuffers, which means only one particle was drawn at a time. Raylib, however uses batch rendering by default.
+*  It used Euler Integeration which is unstable at larger number of particles, and also introduced extra energy.
+*  Algorithms of choice were very inefficient. O(N^2) for Collision Checks, with non-linear memory access.
+*  Data was not handled well, which caused severed cache misses.
+
 ### The "Hard Mode" Constraints
 
 To ensure this was a test of raw engineering efficiency, I imposed strict rules:
@@ -23,15 +28,13 @@ To ensure this was a test of raw engineering efficiency, I imposed strict rules:
 *  **No GPU Compute:** No Compute Shaders or CUDA. Pure CPU physics.
 *  **No Cheats:** Every particle checks for collisions with relevant neighbors. 8 sub-steps per frame.
 
----
-
-##  The Optimization Strategy
+### The Optimization Strategy
 
 This isn't just "faster code." It is a fundamental shift in architecture.
 
 ### 1. Data-Oriented Design (SoA)
 
-Instead of an `Array of Structures` (AoS) where a `Particle` object holds its own position, velocity, and color, I utilize a `Structure of Arrays` (SoA).
+Instead of an `Array of Structures` (AoS), I utilized a `Structure of Arrays` (SoA).
 
 * **Result:** Positions, velocities, and accelerations are split into contiguous arrays.
 * **Benefit:** Predictable memory access patterns that maximize cache-line utilization and allow for compiler auto-vectorization.
@@ -62,9 +65,7 @@ Replaced Euler integration with Verlet.
 
 * **Benefit:** Extremely stable at high forces and larger timesteps, reducing the need for expensive corrective passes.
 
----
-
-##  Project Structure
+## Project Structure
 
 
 ```text
@@ -76,7 +77,6 @@ Replaced Euler integration with Verlet.
 │   └── defines.h          # Compile time parameters
 ├── CMakeList.txt          # Build File
 ```
----
 
 There are multiple versions of the project (V1-V7), The CMake will only compile the code inside the src folder.
 Currently the src folder contains the same code as V7. If you wish to run any older version, you can do that by:
@@ -87,8 +87,8 @@ Copy/Over wite all of the files into the src folder
 
 ## Prerequisites
 
-* **C++17 compatible compiler**
-* **CMake ≥ 3.24**
+* **C++11 compatible compiler**
+* **CMake ≥ 3.11**
 
 ### Linux
 
@@ -109,7 +109,6 @@ brew install cmake
   (Install “Desktop development with C++”)
 * CMake (bundled with VS or installed separately)
 
----
 
 ## Building the Project
 
@@ -143,7 +142,6 @@ cmake --build .
 
 This produces a **native binary** for your platform.
 
----
 
 ## Running the Simulation
 
@@ -161,17 +159,15 @@ From the `build` directory:
 main.exe
 ```
 
----
 
-##  Future Roadmap
+### Future Roadmap
 
 While the current version hits 17k on a single thread, the architecture is ready for the next level:
 
 * **Multithreading:** The grid-based collision system is naturally parallelizable. 
 * **Compute Shaders:** Moving the Verlet integration to the GPU for 1M+ particles.
 
----
 
-##  License
+### License
 
 MIT License. Feel free to fork, learn, and optimize.
