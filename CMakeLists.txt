@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.24)
 project(main CXX)
+
+cmake_policy(SET CMP0135 NEW)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 # FORCE RELEASE MODE
 if(NOT CMAKE_BUILD_TYPE)
@@ -14,7 +17,7 @@ if(MSVC)
     # /Oi   = Enable Intrinsic Functions (Use CPU instructions directly for math like sqrt, sin, cos)
     # /Ot   = Favor Fast Code (Prioritize speed over size)
     # /GL   = Whole Program Optimization (Allows inlining across different files)
-    
+
     add_compile_options(/O2 /Oi /Ot /GL)
     add_link_options(/LTCG) # Linker option required when using /GL
 
@@ -24,7 +27,7 @@ else()
     # -O3 = Aggressive optimization
     # -fno-math-errno = Don't set the global 'errno' variable for math (huge speedup for sqrt/pow, 100% safe)
     # -fno-trapping-math = Assume math instructions won't crash the program (safe for games)
-    
+
     add_compile_options(-O3 -fno-math-errno -fno-trapping-math)
 
     # Architecture specific optimizations
@@ -44,17 +47,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ADDING RAYLIB
 include(FetchContent)
 
-set(RAYLIB_VERSION "5.5")
-set(RAYLIB_URL "https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz")
-
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) 
-set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) 
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
 set(FETCHCONTENT_QUIET FALSE)
 
 FetchContent_Declare(
     raylib
-    URL ${RAYLIB_URL}
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/raysan5/raylib.git
+    GIT_TAG        5.0
+    GIT_PROGRESS TRUE
 )
 
 FetchContent_MakeAvailable(raylib)
