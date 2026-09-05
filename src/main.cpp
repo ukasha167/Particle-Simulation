@@ -1,16 +1,20 @@
+#include <cstdint>
+#include <ctime>
 #include <raylib.h>
 
-#include "solver.h"
-#include "renderer.h"
+#include "defines.hpp"
+#include "solver.hpp"
+#include "renderer.hpp"
 
 int main()
 {
-    srand(time(NULL));
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "1.67");
+    srand(static_cast<unsigned>(time(nullptr)));
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "1.68");
 
-    SetTargetFPS(62); // RAYLIB UNDER THE HOOD USES FRAMETIME TO SLOW DOWN THE SIMULATION,
-    // AND FOR SOME REASONS IT ALWAYS SETS THE FPS BY SOME NUMBER BELOW THE SPECIFIED LIMIT
-    // SO TO KEEP THE SIMULATION AT A SOLID @60FPS, WE NEED TO USE JUST A BIT HIGHER NUMBER
+    // THE SOLVER RUNS ON A FIXED TIME STEP OF ITS OWN AND NEVER READS GetFrameTime(),
+    // SO THIS ONLY CONTROLS HOW OFTEN WE PRESENT. IF THE MACHINE CANNOT KEEP UP THE
+    // SIMULATION GOES INTO SLOW MOTION INSTEAD OF DESTABILISING.
+    SetTargetFPS(static_cast<int>(SIMULATION_FPS));
 
     // PARAMETERS:
     // - THE ASSET'S LOCATION
@@ -18,12 +22,12 @@ int main()
     // RETURNS:
     // - 1 IF DIAMETER IS INVALID OR IMAGE NOT FOUND
     // - 0 IF EVERYTHING GOES WELL
-    if (Renderer::loadAsset("../assets/circle.png", MAX_PARTICLE_RADIUS * 2))
+    if (Renderer::loadAsset("../assets/circle.png", static_cast<uint8_t>(PARTICLE_DIAMETER)))
     {
         return 1;
     }
 
-    // CALCULATES THE INITIAL VELOCITIES, AND COLOR VALUES FOR THE PARTICLES
+    // BUILDS THE COLOR TABLE AND CLEARS THE PARTICLE STATE
     Solver::preComputeInitialValues();
 
     bool pause = false;
@@ -37,20 +41,20 @@ int main()
 
         if (!pause)
         {
-            Solver::generateParticles(GENERATE_PARTICLES_PER_SECOND);
+            Solver::generateParticles(SPAWN_PER_FRAME);
         }
 
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
         {
             Solver::mousePush(GetMousePosition(), 200.0f);
         }
-        if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
+        else if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
         {
             Solver::mousePull(GetMousePosition(), 200.0f);
         }
 
         // JUST A SINGLE FUNCTION THAT HANDLES ALL OF THE SIMULATION
-        Solver::updateSimulationState(GetFrameTime());
+        Solver::updateSimulationState();
 
         // RENDERING PART:
 
@@ -62,7 +66,7 @@ int main()
         Renderer::drawParticles(Solver::particles, Solver::currentParticlesCount);
 
         // DRAW FPS AND THE PARTICLE COUNT (REMOVING IT MIGHT ACTUALLY IMPROVE PERFORMANCE)
-        Renderer::drawStats(GetFPS(), Solver::currentParticlesCount);
+        Renderer::drawStats(static_cast<uint16_t>(GetFPS()), Solver::currentParticlesCount);
 
         EndDrawing();
     }
