@@ -1,52 +1,17 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.25)
 project(main CXX)
 
-cmake_policy(SET CMP0135 NEW)
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
-
-# FORCE RELEASE MODE
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# APPLY SYSTEM SPECIFIC FLAGS
-if(MSVC)
-    # WINDOWS (Visual Studio)
-    # ---------------------------------------------------------
-    # /O2   = Maximize Speed (Equivalent to -O3)
-    # /Oi   = Enable Intrinsic Functions (Use CPU instructions directly for math like sqrt, sin, cos)
-    # /Ot   = Favor Fast Code (Prioritize speed over size)
-    # /GL   = Whole Program Optimization (Allows inlining across different files)
-
-    add_compile_options(/O2 /Oi /Ot /GL)
-    add_link_options(/LTCG) # Linker option required when using /GL
-
-else()
-    # LINUX / MACOS / MINGW (GCC or Clang)
-    # ---------------------------------------------------------
-    # -O3 = Aggressive optimization
-    # -fno-math-errno = Don't set the global 'errno' variable for math (huge speedup for sqrt/pow, 100% safe)
-    # -fno-trapping-math = Assume math instructions won't crash the program (safe for games)
-
-    add_compile_options(-O3 -fno-math-errno -fno-trapping-math)
-
-    # Architecture specific optimizations
-    if(APPLE)
-        # Apple Silicon (M-Series)
-        add_compile_options(-mcpu=apple-m1)
-    else()
-        # Linux / Windows (Intel/AMD)
-        # -march=native = Use AVX2/AVX512 instructions available on YOUR cpu
-        add_compile_options(-march=native)
-    endif()
-endif()
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ADDING RAYLIB
-include(FetchContent)
+# Default to Release mode if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose build type" FORCE)
+endif()
 
+# Fetch Raylib
+include(FetchContent)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
 set(FETCHCONTENT_QUIET FALSE)
@@ -54,18 +19,45 @@ set(FETCHCONTENT_QUIET FALSE)
 FetchContent_Declare(
     raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG        5.0
-    GIT_PROGRESS TRUE
+    GIT_TAG        6.0
+    GIT_PROGRESS   TRUE
 )
 
 FetchContent_MakeAvailable(raylib)
 
-# SOURCE FILES
+# Source files & includes
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp")
 set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/")
 
-# EXECUTABLES
-add_executable(${PROJECT_NAME})
-target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
+# Executable target
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+
+# Compiler optimization options
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /O2 /Oi /Ot)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -O3
+        -fno-math-errno
+        -fno-trapping-math
+    )
+
+    if(APPLE)
+        # Apple Silicon baseline (runs on all M-series chips)
+        target_compile_options(${PROJECT_NAME} PRIVATE -mcpu=apple-m1)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -march=native)
+    endif()
+endif()
+
+# Enable Link-Time Optimization (LTO / IPO) if supported by compiler
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
+if(ipo_supported)
+    set_target_properties(${PROJECT_NAME} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    message(STATUS "Link-Time Optimization (IPO/LTO) enabled.")
+else()
+    message(STATUS "IPO/LTO not supported: ${ipo_error}")
+endif()
