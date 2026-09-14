@@ -66,12 +66,14 @@ int main()
         Renderer::drawParticles(Solver::particles, Solver::currentParticlesCount);
 
         // DRAW FPS AND THE PARTICLE COUNT (REMOVING IT MIGHT ACTUALLY IMPROVE PERFORMANCE)
-        Renderer::drawStats(static_cast<uint16_t>(GetFPS()), Solver::currentParticlesCount);
+        Renderer::drawStats(static_cast<uint16_t>(GetFPS()), Solver::currentParticlesCount,
+                            Solver::threadCount());
 
         EndDrawing();
     }
 
     Renderer::unloadAsset();
+    Solver::shutdown();
     CloseWindow();
 
     return 0;
