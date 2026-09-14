@@ -15,7 +15,8 @@ public:
 public:
     static uint8_t loadAsset(const char *imageName, const uint8_t diameter);
     static void drawParticles(const Particle &particles, const uint32_t currentParticlesCount);
-    static void drawStats(const uint16_t fps, const uint32_t currentParticlesCount);
+    static void drawStats(const uint16_t fps, const uint32_t currentParticlesCount,
+                          const uint32_t threads);
     static void unloadAsset();
 };
 
