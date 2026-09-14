@@ -29,10 +29,14 @@ FetchContent_MakeAvailable(raylib)
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp")
 set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/")
 
+# The solver runs on a pool of worker threads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 # Executable target
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib Threads::Threads)
 
 # Compiler optimization options
 if(MSVC)
