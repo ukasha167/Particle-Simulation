@@ -68,9 +68,11 @@ void Renderer::drawParticles(const Particle &particles, const uint32_t currentPa
     rlSetTexture(0);
 }
 
-void Renderer::drawStats(const uint16_t fps, const uint32_t currentParticlesCount)
+void Renderer::drawStats(const uint16_t fps, const uint32_t currentParticlesCount,
+                         const uint32_t threads)
 {
-    DrawText(TextFormat("FPS: %d\nParticles: %d", fps, currentParticlesCount), 10, 10, 24, WHITE);
+    DrawText(TextFormat("FPS: %d\nParticles: %d\nThreads: %d", fps, currentParticlesCount, threads),
+             10, 10, 24, WHITE);
 }
 
 void Renderer::unloadAsset()
