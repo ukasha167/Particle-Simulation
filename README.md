@@ -1,17 +1,18 @@
 #  CPU Particle Simulation (Optimized)
 
 A high-performance physics engine written in C++.
-This project is a case study in **Data-Oriented Design**. By restructuring memory access and algorithmic complexity, I achieved a **24x performance increase** over the initial implementation.
+This project is a case study in **Data-Oriented Design**. My first version held about 700 particles at 60 FPS. Restructuring memory access got one thread to 17,000, and spreading the solver across 4 threads took it to **100,000 particles at 60 FPS** on an M1 Air.
 
 ### The Numbers
 
 I rewrote my simulation engine from scratch. Same machine. Same target FPS. Drastically different results.
 
-| Metric | Old Version | **New Version** |
-| --- | --- | --- |
-| **Particle Count** | ~700 | **17,000+** |
-| **FPS** | 60 | **60** |
-| **Speedup** | 1x | **24x** |
+| Metric | Old Version | Single Thread | **Current** |
+| --- | --- | --- | --- |
+| **Particle Count** | ~700 | 17,000+ | **100,000** |
+| **FPS** | 60 | 60 | **60** |
+| **CPU Threads** | 1 | 1 | **4** |
+| **Particles vs. Old** | 1x | 24x | **~140x** |
 
 **Note:** The old version which I compared to, is not included in this repository. However I can explain why that was so slow:
 
@@ -24,9 +25,9 @@ I rewrote my simulation engine from scratch. Same machine. Same target FPS. Dras
 
 To ensure this was a test of raw engineering efficiency, I imposed strict rules:
 
-*  **No Multithreading:** Everything runs on a single CPU core.
+*  **CPU Only, 4 Threads:** The solver runs on 4 worker threads, one per performance core of the M1.
 *  **No GPU Compute:** No Compute Shaders or CUDA. Pure CPU physics.
-*  **No Cheats:** Every particle checks for collisions with relevant neighbors. 8 sub-steps per frame.
+*  **No Cheats:** Every particle checks for collisions with relevant neighbors. 18 sub-steps per frame.
 
 ### The Optimization Strategy
 
@@ -36,7 +37,7 @@ This isn't just "faster code." It is a fundamental shift in architecture.
 
 Instead of an `Array of Structures` (AoS), I utilized a `Structure of Arrays` (SoA).
 
-* **Result:** Positions, velocities, and accelerations are split into contiguous arrays.
+* **Result:** Positions and velocities are split into contiguous arrays.
 * **Benefit:** Predictable memory access patterns that maximize cache-line utilization and allow for compiler auto-vectorization.
 
 ### 2. The "No Heap" Manifesto
@@ -59,27 +60,37 @@ The naive approach checks every particle against every other particle **O(N^2)**
 
 **In short:** The collision algorithm that i'm using, behaves like a LinkedList of particles. And the **Counting Sort** is just making sure that the related particles' indices are contiguous like Array.
 
-### 4. Verlet Integration
+### 4. Explicit Velocity
 
-Replaced Euler integration with Verlet.
+Earlier versions used Verlet integration, where velocity is implied by the previous position. That made every collision fix also change the velocity, whether I wanted it to or not.
 
-* **Benefit:** Extremely stable at high forces and larger timesteps, reducing the need for expensive corrective passes.
+The current solver keeps velocity in its own arrays and uses semi-implicit Euler: add gravity to the velocity, then move the position by the velocity. Unlike the plain Euler in my first version, it doesn't pump extra energy into the system. The contact solver still feeds part of each position fix back into velocity, because that spring is what makes piles pop and splash, but one constant (`COLLISION_REACTION_LOSS`) now decides how much.
+
+### 5. Multithreading
+
+The solver runs on 4 threads, one per performance core of the M1.
+
+* **Sized to the fast cores.** Every pass ends in a barrier, so the pool runs at the speed of its slowest thread. An efficiency core does this work at about a third of the speed, so the pool leaves them out (`hw.perflevel0.physicalcpu`) and they stay free for the OS and the renderer. Set `PARTICLE_THREADS` to try other counts.
+* **A spinning pool.** The solver hands out work about fifty times per frame. A normal `condition_variable` pool takes 10-50 µs to wake up, so the workers spin on one atomic instead and only sleep when nothing has arrived for a while.
+* **A parallel counting sort.** Each thread counts its own slice of particles into a private histogram, so no atomics are needed. The prefix sum gives every thread its own write cursors, and the result is byte-for-byte the same as the single-threaded sort.
+* **Row bands for contacts.** The grid is cut into two bands of rows per thread, sized by the work in each row (the sum of n² over its cells) instead of the particle count. Odd bands run in one pass and even bands in the next, so two threads never touch neighbouring rows at the same time.
 
 ### Project Structure
 
 
 ```text
 ├── src/
-│   ├── main.cpp           # Entry point & Loop
-│   ├── solver.h/cpp       # The Physics Engine (Verlet + Grid)
-│   ├── renderer.h/cpp     # Visualization (Raylib)
-│   |── particle.cpp       # SoA Data Structures
-│   └── defines.h          # Compile time parameters
-├── CMakeList.txt          # Build File
+│   ├── main.cpp            # Entry point & Loop
+│   ├── solver.hpp/cpp      # The Physics Engine (Grid, Counting Sort, Contacts)
+│   ├── threading.hpp/cpp   # Spinning Thread Pool
+│   ├── renderer.hpp/cpp    # Visualization (Raylib)
+│   ├── particle.hpp        # SoA Data Structures
+│   └── defines.hpp         # Compile time parameters
+├── CMakeLists.txt          # Build File
 ```
 
 There are multiple versions of the project (V1-V7), The CMake will only compile the code inside the src folder.
-Currently the src folder contains the same code as V7. If you wish to run any older version, you can do that by:
+The src folder holds the current version, which is newer than V7: it adds the thread pool. If you wish to run any older version, you can do that by:
 
 Manually setting up the CMake
 Or
@@ -87,8 +98,8 @@ Copy/Over wite all of the files into the src folder
 
 ## Prerequisites
 
-* **C++11 compatible compiler**
-* **CMake ≥ 3.11**
+* **C++23 compatible compiler**
+* **CMake ≥ 3.25**
 
 ### Linux
 
@@ -162,10 +173,9 @@ main.exe
 
 ### Future Roadmap
 
-While the current version hits 17k on a single thread, the architecture is ready for the next level:
+Multithreading took it from 17k on one thread to 100k on four. The next step:
 
-* **Multithreading:** The grid-based collision system is naturally parallelizable. 
-* **Compute Shaders:** Moving the Verlet integration to the GPU for 1M+ particles.
+* **Compute Shaders:** Moving the integration to the GPU for 1M+ particles.
 
 
 ### License
